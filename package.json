@@ -2,7 +2,7 @@
   "private": false,
   "displayName": "Fronius Inverter Energy",
   "name": "homebridge-fronius-inverter-energy",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Homebridge Fronius Inverter Energy Plugin",
   "license": "Apache-2.0",
   "repository": {

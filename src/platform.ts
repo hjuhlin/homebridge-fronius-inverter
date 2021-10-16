@@ -93,14 +93,14 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
 
                     if (extraPersistedData !== undefined) {
                       accessoryObject.accessory.context.totalenergy = extraPersistedData.totalenergy;
-                      this.log.info(this.config['Name'] + ' - loading total energy from file ' +
+                      this.log.info(this.config['name'] as string + ' - loading total energy from file ' +
                      accessoryObject.accessory.context.totalenergy+' kWh');
                     } else {
-                      this.log.warn(this.config['Name'] + ' - starting new log for total energy in file!');
+                      this.log.warn(this.config['name'] as string + ' - starting new log for total energy in file!');
                       accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({ totalenergy:0, lastReset: 0 });
                     }
                   } else {
-                    this.log.error(this.config['Name'] + ' - history not loaded yet!');
+                    this.log.error(this.config['name'] as string + ' - history not loaded yet!');
                   }
                 }
               }
@@ -163,7 +163,7 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
 
         const accessoryObject = this.getAccessory(site, 'inverter');
         new LightBulbAccessory(this, accessoryObject.accessory, site, this.config, this.log);
-        this.addOrRestorAccessory(accessoryObject.accessory, this.config['Name'], 'inverter', accessoryObject.exists);
+        this.addOrRestorAccessory(accessoryObject.accessory, this.config['name'] as string, 'inverter', accessoryObject.exists);
 
         if (this.config['EveLoging'] as boolean === true) {
           const fakeGatoService = new this.FakeGatoHistoryService('custom', accessoryObject.accessory,
@@ -192,12 +192,12 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
     const existingAccessory = this.accessories.find(accessory => accessory.UUID === this.localIdForType(device, type));
 
     if (existingAccessory!==undefined) {
-      existingAccessory.displayName = this.config['Name'];
+      existingAccessory.displayName = this.config['name'] as string;
 
       return {accessory : existingAccessory, exists : true};
     }
 
-    const accessory = new this.api.platformAccessory(this.config['Name'], this.localIdForType(device, type));
+    const accessory = new this.api.platformAccessory(this.config['name'] as string, this.localIdForType(device, type));
     accessory.context.device = device;
 
     return {accessory : accessory, exists : false};
@@ -214,6 +214,6 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
   }
 
   localIdForType(device:Site, type:string):string {
-    return this.api.hap.uuid.generate(this.config['Name']+'_'+type);
+    return this.api.hap.uuid.generate(this.config['name'] as string+'_'+type);
   }
 }

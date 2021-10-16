@@ -23,7 +23,7 @@ export class LightBulbAccessory {
       .setCharacteristic(this.platform.Characteristic.SerialNumber, 'None');
 
     this.service = this.accessory.getService(this.platform.Service.Lightbulb) || this.accessory.addService(this.platform.Service.Lightbulb);
-    this.service.setCharacteristic(this.platform.Characteristic.Name, this.config['Name']);
+    this.service.setCharacteristic(this.platform.Characteristic.Name, this.config['name'] as string);
 
     this.service.addOptionalCharacteristic(this.platform.customCharacteristic.characteristic.ElectricPower);
     this.service.addOptionalCharacteristic(this.platform.customCharacteristic.characteristic.TotalPowerConsumption);

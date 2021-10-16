@@ -8,7 +8,7 @@ This is a plugin for Fronius Inverters
 
 # Support for
 
-1.0.3
+1.0.4
 
 - First version
 
