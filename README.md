@@ -20,6 +20,7 @@ This is a plugin for Fronius Inverters
         "name": "Fronius Inverter Energy",
         "ip": "192.168.0.X",
         "UpdateTime": 5,
+        "MaxProduction": 10000,
         "ViewElectricPowerProduction": false,
         "EveLoging": false,
         "Debug": false,
