@@ -20,10 +20,10 @@ export class LightBulbAccessory {
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Fronius')
       .setCharacteristic(this.platform.Characteristic.Model, 'Fronius')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, site.Meter_Location);
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, 'None');
 
     this.service = this.accessory.getService(this.platform.Service.Lightbulb) || this.accessory.addService(this.platform.Service.Lightbulb);
-    this.service.setCharacteristic(this.platform.Characteristic.Name, site.Meter_Location);
+    this.service.setCharacteristic(this.platform.Characteristic.Name, this.config['Name']);
 
     this.service.addOptionalCharacteristic(this.platform.customCharacteristic.characteristic.ElectricPower);
     this.service.addOptionalCharacteristic(this.platform.customCharacteristic.characteristic.TotalPowerConsumption);
