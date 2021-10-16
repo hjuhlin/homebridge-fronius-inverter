@@ -5,6 +5,7 @@ import { Site } from '../types/type';
 
 export class LightBulbAccessory {
   private service: Service;
+  private serviceSensor: Service;
 
   constructor(
     private readonly platform: FroniusInverterEnergyPlatform,
@@ -24,9 +25,6 @@ export class LightBulbAccessory {
     this.service = this.accessory.getService(this.platform.Service.Lightbulb) || this.accessory.addService(this.platform.Service.Lightbulb);
     this.service.setCharacteristic(this.platform.Characteristic.Name, site.Meter_Location);
 
-    this.service = this.accessory.getService(this.platform.Service.LightSensor) ||
-    this.accessory.addService(this.platform.Service.LightSensor);
-
     this.service.addOptionalCharacteristic(this.platform.customCharacteristic.characteristic.ElectricPower);
     this.service.addOptionalCharacteristic(this.platform.customCharacteristic.characteristic.TotalPowerConsumption);
     this.service.addOptionalCharacteristic(this.platform.customCharacteristic.characteristic.ResetTotal);
@@ -34,7 +32,6 @@ export class LightBulbAccessory {
     const maxProduction = this.config['MaxProduction'];
     const power = site.P_PV;
 
-    this.service.setCharacteristic(this.platform.Characteristic.CurrentAmbientLightLevel, power);
     this.service.setCharacteristic(this.platform.Characteristic.Brightness, power / maxProduction * 100);
     this.service.setCharacteristic(this.platform.customCharacteristic.characteristic.ElectricPower, power);
     this.service.setCharacteristic(this.platform.Characteristic.On, power>0);
@@ -44,6 +41,11 @@ export class LightBulbAccessory {
 
     this.service.getCharacteristic(this.platform.customCharacteristic.characteristic.ResetTotal)
       .on('get', this.getResetTotal.bind(this));
+
+    this.serviceSensor = this.accessory.getService(this.platform.Service.LightSensor) ||
+      this.accessory.addService(this.platform.Service.LightSensor);
+
+    this.serviceSensor.setCharacteristic(this.platform.Characteristic.CurrentAmbientLightLevel, power);
 
     this.accessory.context.totalenergy = 0;
     this.accessory.context.lastUpdated = new Date().getTime();

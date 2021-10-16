@@ -8,9 +8,9 @@ This is a plugin for Fronius Inverters
 
 # Support for
 
-1.0.0
+1.0.2
 
-- First version (testing stuff)
+- First version
 
 # Default config
 

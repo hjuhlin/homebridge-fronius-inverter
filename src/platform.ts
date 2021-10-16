@@ -69,12 +69,13 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
           const site = froniusObject.Body.Data.Site;
 
           const accessoryObject = this.getAccessory(site, 'inverter');
-          const service = accessoryObject.accessory.getService(this.Service.LightSensor);
-          if (service!==undefined) {
+          const service = accessoryObject.accessory.getService(this.Service.Lightbulb);
+          const serviceSensor = accessoryObject.accessory.getService(this.Service.LeakSensor);
+          if (service!==undefined && serviceSensor!==undefined) {
             const maxProduction = this.config['MaxProduction'];
             const power = site.P_PV;
 
-            service.setCharacteristic(this.Characteristic.CurrentAmbientLightLevel, power);
+            serviceSensor.setCharacteristic(this.Characteristic.CurrentAmbientLightLevel, power);
             service.setCharacteristic(this.Characteristic.Brightness, power / maxProduction * 100);
             service.setCharacteristic(this.customCharacteristic.characteristic.ElectricPower, power);
             service.setCharacteristic(this.Characteristic.On, power>0);
