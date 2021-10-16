@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "FroniusInverterEnergy",
   "pluginType": "platform",
   "singular": true,
   "schema": {
@@ -9,7 +9,42 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "Fronius Inverter Energy"
+      },
+      "Ip": {
+        "title": "IP-adress to Fronius Inverter",
+        "type": "string",
+        "required": true
+      },
+      "UpdateTime": {
+        "title": "Time in secondes between updates",
+        "type": "number",
+        "required": true,
+        "default": 5
+      },
+      "MaxProduction": {
+        "title": "Max production in W",
+        "type": "number",
+        "required": true,
+        "default": 10000
+      },  
+      "ViewElectricPowerProduction": {
+        "title": "View electric power production (only works in Eve app)",
+        "type": "boolean",
+        "required": false,
+        "default": false
+      }, 
+      "Debug": {
+        "title": "View debug messages",
+        "type": "boolean",
+        "required": true,
+        "default": false
+      },
+      "EveLoging": {
+        "title": "Active Eve Loging",
+        "type": "boolean",
+        "required": false,
+        "default": false
       }
     }
   }
