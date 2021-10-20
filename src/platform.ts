@@ -74,64 +74,70 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
           const serviceSensor = accessoryObject.accessory.getService(this.Service.LightSensor);
           if (service!==undefined && serviceSensor!==undefined) {
             const maxProduction = this.config['MaxProduction'];
-            const power = site.P_PV;
+            let power = site.P_PV;
+
+            if (site.P_PV===null) {
+              power=0;
+            }
 
             if (this.config['Debug'] as boolean) {
               this.log.info('Update current power', power);
             }
 
-            serviceSensor.setCharacteristic(this.Characteristic.CurrentAmbientLightLevel, power);
+            serviceSensor.setCharacteristic(this.Characteristic.CurrentAmbientLightLevel, power>0?power: 0.0001);
             service.setCharacteristic(this.Characteristic.Brightness, power / maxProduction * 100);
             service.setCharacteristic(this.customCharacteristic.characteristic.ElectricPower, power);
             service.setCharacteristic(this.Characteristic.On, power>0);
 
-            if (this.config['EveLoging'] as boolean && this.update1min) {
-              if (this.start===true) {
-                if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
-                  if (accessoryObject.accessory.context.fakeGatoService.isHistoryLoaded()) {
-                    const extraPersistedData = accessoryObject.accessory.context.fakeGatoService.getExtraPersistedData();
+            if (power>1) {
+              if (this.config['EveLoging'] as boolean && this.update1min) {
+                if (this.start===true) {
+                  if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
+                    if (accessoryObject.accessory.context.fakeGatoService.isHistoryLoaded()) {
+                      const extraPersistedData = accessoryObject.accessory.context.fakeGatoService.getExtraPersistedData();
 
-                    if (extraPersistedData !== undefined) {
-                      accessoryObject.accessory.context.totalenergy = extraPersistedData.totalenergy;
-                      this.log.info(this.config['name'] as string + ' - loading total energy from file ' +
+                      if (extraPersistedData !== undefined) {
+                        accessoryObject.accessory.context.totalenergy = extraPersistedData.totalenergy;
+                        this.log.info(this.config['name'] as string + ' - loading total energy from file ' +
                      accessoryObject.accessory.context.totalenergy+' kWh');
+                      } else {
+                        this.log.warn(this.config['name'] as string + ' - starting new log for total energy in file!');
+                        accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({ totalenergy:0, lastReset: 0 });
+                      }
                     } else {
-                      this.log.warn(this.config['name'] as string + ' - starting new log for total energy in file!');
-                      accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({ totalenergy:0, lastReset: 0 });
+                      this.log.error(this.config['name'] as string + ' - history not loaded yet!');
                     }
-                  } else {
-                    this.log.error(this.config['name'] as string + ' - history not loaded yet!');
                   }
                 }
-              }
 
-              const now = new Date().getTime();
-              const refresh = (now - accessoryObject.accessory.context.lastUpdated)/ 1000;
-              const add = (power / ((60 * 60) / (refresh)));
-              const totalenergy = accessoryObject.accessory.context.totalenergy + add/1000;
-              accessoryObject.accessory.context.lastUpdated = now;
-              accessoryObject.accessory.context.totalenergy = totalenergy;
+                const now = new Date().getTime();
+                const refresh = (now - accessoryObject.accessory.context.lastUpdated)/ 1000;
+                const add = (power / ((60 * 60) / (refresh)));
+                const totalenergy = accessoryObject.accessory.context.totalenergy + add/1000;
+                accessoryObject.accessory.context.lastUpdated = now;
+                accessoryObject.accessory.context.totalenergy = totalenergy;
 
-              if (this.config['Debug'] as boolean) {
-                const totalenergyLog = Math.round(totalenergy* 100000) / 100000;
+                if (this.config['Debug'] as boolean) {
+                  const totalenergyLog = Math.round(totalenergy* 100000) / 100000;
 
-                this.log.info(accessoryObject.accessory.displayName +': '+ totalenergyLog +
+                  this.log.info(accessoryObject.accessory.displayName +': '+ totalenergyLog +
                    ' kWh from '+accessoryObject.accessory.context.startTime.toISOString());
+                }
+
+                service.updateCharacteristic(this.customCharacteristic.characteristic.TotalPowerConsumption,
+                  accessoryObject.accessory.context.totalenergy);
               }
 
-              service.updateCharacteristic(this.customCharacteristic.characteristic.TotalPowerConsumption,
-                accessoryObject.accessory.context.totalenergy);
-            }
+              if (this.config['EveLoging'] as boolean && this.update9min) {
+                if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
+                  accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({
+                    totalenergy:accessoryObject.accessory.context.totalenergy});
 
-            if (this.config['EveLoging'] as boolean && this.update9min) {
-              if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
-                accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({
-                  totalenergy:accessoryObject.accessory.context.totalenergy});
-
-                accessoryObject.accessory.context.fakeGatoService.addEntry({
-                  time: Math.round(new Date().valueOf() / 1000),
-                  power: Math.round(power),
-                });
+                  accessoryObject.accessory.context.fakeGatoService.addEntry({
+                    time: Math.round(new Date().valueOf() / 1000),
+                    power: Math.round(power),
+                  });
+                }
               }
             }
           }
