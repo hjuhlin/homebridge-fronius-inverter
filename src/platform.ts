@@ -108,6 +108,8 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
                       this.log.error(this.config['name'] as string + ' - history not loaded yet!');
                     }
                   }
+
+                  this.start=false;
                 }
 
                 const now = new Date().getTime();
@@ -128,7 +130,7 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
                   accessoryObject.accessory.context.totalenergy);
               }
 
-              if (this.config['EveLoging'] as boolean && this.update10min) {
+              if (this.config['EveLoging'] as boolean && this.update10min && this.start===false) {
                 if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
                   accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({
                     totalenergy:accessoryObject.accessory.context.totalenergy});
