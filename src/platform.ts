@@ -19,9 +19,9 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
 
   private FakeGatoHistoryService;
   private lastUpdate1min = new Date('2021-01-01');
-  private lastUpdate9min = new Date('2021-01-01');
+  private lastUpdate10min = new Date('2021-01-01');
   private update1min=false;
-  private update9min=false;
+  private update10min=false;
   private start = true;
 
   // this is used to track restored cached accessories
@@ -50,16 +50,16 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
       httpRequest.GetStatusListForAll().then((results)=> {
         const now = new Date();
         const added1Min = new Date(this.lastUpdate1min.getTime()+(1*60000));
-        const added9Min = new Date(this.lastUpdate9min.getTime()+(9*60000));
+        const added10Min = new Date(this.lastUpdate10min.getTime()+(10*60000));
 
         if (now>added1Min) {
           this.lastUpdate1min = now;
           this.update1min = true;
         }
 
-        if (now>added9Min) {
-          this.lastUpdate9min = now;
-          this.update9min = true;
+        if (now>added10Min) {
+          this.lastUpdate10min = now;
+          this.update10min = true;
         }
 
         const froniusObject = (<FroniusObject>results);
@@ -128,7 +128,7 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
                   accessoryObject.accessory.context.totalenergy);
               }
 
-              if (this.config['EveLoging'] as boolean && this.update9min) {
+              if (this.config['EveLoging'] as boolean && this.update10min) {
                 if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
                   accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({
                     totalenergy:accessoryObject.accessory.context.totalenergy});
@@ -145,7 +145,7 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
       });
 
       this.update1min= false;
-      this.update9min= false;
+      this.update10min= false;
 
     }, (this.config['UpdateTime'] as number) * 1000);
 
