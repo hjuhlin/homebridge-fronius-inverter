@@ -23,6 +23,8 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
   private update1min=false;
   private update10min=false;
   private start = true;
+  private pauseToTime = new Date();
+  private callingService = false;
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
@@ -45,111 +47,122 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
     this.FakeGatoHistoryService = fakegato(this.api);
 
     setInterval(() => {
-      const httpRequest = new HttpRequest(this.config, log);
+      if (this.pauseToTime<new Date() && this.callingService===false) {
 
-      httpRequest.GetStatusListForAll().then((results)=> {
-        const now = new Date();
-        const added1Min = new Date(this.lastUpdate1min.getTime()+(1*60000));
-        const added10Min = new Date(this.lastUpdate10min.getTime()+(10*60000));
+        const httpRequest = new HttpRequest(this.config, log);
 
-        if (now>added1Min) {
-          this.lastUpdate1min = now;
-          this.update1min = true;
-        }
+        this.callingService = true;
 
-        if (now>added10Min) {
-          this.lastUpdate10min = now;
-          this.update10min = true;
-        }
+        httpRequest.GetStatusListForAll().then((results)=> {
+          const now = new Date();
+          const added1Min = new Date(this.lastUpdate1min.getTime()+(1*60000));
+          const added10Min = new Date(this.lastUpdate10min.getTime()+(10*60000));
 
-        const froniusObject = (<FroniusObject>results);
+          if (now>added1Min) {
+            this.lastUpdate1min = now;
+            this.update1min = true;
+          }
 
-        if (froniusObject !== undefined && froniusObject.Body !== undefined &&
+          if (now>added10Min) {
+            this.lastUpdate10min = now;
+            this.update10min = true;
+          }
+
+          const froniusObject = (<FroniusObject>results);
+
+          if (froniusObject !== undefined && froniusObject.Body !== undefined &&
           froniusObject.Body.Data!==undefined && froniusObject.Body.Data.Site!==undefined) {
 
-          const site = froniusObject.Body.Data.Site;
+            const site = froniusObject.Body.Data.Site;
 
-          const accessoryObject = this.getAccessory(site, 'inverter');
-          const service = accessoryObject.accessory.getService(this.Service.Lightbulb);
-          const serviceSensor = accessoryObject.accessory.getService(this.Service.LightSensor);
-          if (service!==undefined && serviceSensor!==undefined) {
-            const maxProduction = this.config['MaxProduction'];
-            let power = site.P_PV;
+            const accessoryObject = this.getAccessory(site, 'inverter');
+            const service = accessoryObject.accessory.getService(this.Service.Lightbulb);
+            const serviceSensor = accessoryObject.accessory.getService(this.Service.LightSensor);
+            if (service!==undefined && serviceSensor!==undefined) {
+              const maxProduction = this.config['MaxProduction'];
+              let power = site.P_PV;
 
-            if (site.P_PV===null) {
-              power=0;
-            }
-
-            if (this.config['Debug'] as boolean) {
-              this.log.info('Update current power', power);
-            }
-
-            serviceSensor.setCharacteristic(this.Characteristic.CurrentAmbientLightLevel, power>0?power: 0.0001);
-            service.setCharacteristic(this.Characteristic.Brightness, power / maxProduction * 100);
-            service.setCharacteristic(this.customCharacteristic.characteristic.ElectricPower, power);
-            service.setCharacteristic(this.Characteristic.On, power>0);
-
-            if (power>1) {
-              if (this.config['EveLoging'] as boolean && this.update1min) {
-                if (this.start===true) {
-                  if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
-                    if (accessoryObject.accessory.context.fakeGatoService.isHistoryLoaded()) {
-                      const extraPersistedData = accessoryObject.accessory.context.fakeGatoService.getExtraPersistedData();
-
-                      if (extraPersistedData !== undefined) {
-                        accessoryObject.accessory.context.totalenergy = extraPersistedData.totalenergy;
-                        this.log.info(this.config['name'] as string + ' - loading total energy from file ' +
-                     accessoryObject.accessory.context.totalenergy+' kWh');
-                      } else {
-                        this.log.warn(this.config['name'] as string + ' - starting new log for total energy in file!');
-                        accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({ totalenergy:0, lastReset: 0 });
-                      }
-                    } else {
-                      this.log.error(this.config['name'] as string + ' - history not loaded yet!');
-                    }
-                  }
-
-                  this.start=false;
-                }
-
-                const now = new Date().getTime();
-                const refresh = (now - accessoryObject.accessory.context.lastUpdated)/ 1000;
-                const add = (power / ((60 * 60) / (refresh)));
-                const totalenergy = accessoryObject.accessory.context.totalenergy + add/1000;
-                accessoryObject.accessory.context.lastUpdated = now;
-                accessoryObject.accessory.context.totalenergy = totalenergy;
-
-                if (this.config['Debug'] as boolean) {
-                  const totalenergyLog = Math.round(totalenergy* 100000) / 100000;
-
-                  this.log.info(accessoryObject.accessory.displayName +': '+ totalenergyLog +
-                   ' kWh from '+accessoryObject.accessory.context.startTime.toISOString());
-                }
-
-                service.updateCharacteristic(this.customCharacteristic.characteristic.TotalPowerConsumption,
-                  accessoryObject.accessory.context.totalenergy);
+              if (site.P_PV===null) {
+                power=0;
               }
 
-              if (this.config['EveLoging'] as boolean && this.update10min && this.start===false) {
-                if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
-                  accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({
-                    totalenergy:accessoryObject.accessory.context.totalenergy});
+              if (this.config['Debug'] as boolean) {
+                this.log.info('Update current power', power);
+              }
 
-                  accessoryObject.accessory.context.fakeGatoService.addEntry({
-                    time: Math.round(new Date().valueOf() / 1000),
-                    power: Math.round(power),
-                  });
+              serviceSensor.setCharacteristic(this.Characteristic.CurrentAmbientLightLevel, power>0?power: 0.0001);
+              service.setCharacteristic(this.Characteristic.Brightness, power / maxProduction * 100);
+              service.setCharacteristic(this.customCharacteristic.characteristic.ElectricPower, power);
+              service.setCharacteristic(this.Characteristic.On, power>0);
+
+              if (power>1) {
+                if (this.config['EveLoging'] as boolean && this.update1min) {
+                  if (this.start===true) {
+                    if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
+                      if (accessoryObject.accessory.context.fakeGatoService.isHistoryLoaded()) {
+                        const extraPersistedData = accessoryObject.accessory.context.fakeGatoService.getExtraPersistedData();
+
+                        if (extraPersistedData !== undefined) {
+                          accessoryObject.accessory.context.totalenergy = extraPersistedData.totalenergy;
+                          this.log.info(this.config['name'] as string + ' - loading total energy from file ' +
+                     accessoryObject.accessory.context.totalenergy+' kWh');
+                        } else {
+                          this.log.warn(this.config['name'] as string + ' - starting new log for total energy in file!');
+                          accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({ totalenergy:0, lastReset: 0 });
+                        }
+                      } else {
+                        this.log.error(this.config['name'] as string + ' - history not loaded yet!');
+                      }
+                    }
+
+                    this.start=false;
+                  }
+
+                  const now = new Date().getTime();
+                  const refresh = (now - accessoryObject.accessory.context.lastUpdated)/ 1000;
+                  const add = (power / ((60 * 60) / (refresh)));
+                  const totalenergy = accessoryObject.accessory.context.totalenergy + add/1000;
+                  accessoryObject.accessory.context.lastUpdated = now;
+                  accessoryObject.accessory.context.totalenergy = totalenergy;
+
+                  if (this.config['Debug'] as boolean) {
+                    const totalenergyLog = Math.round(totalenergy* 100000) / 100000;
+
+                    this.log.info(accessoryObject.accessory.displayName +': '+ totalenergyLog +
+                   ' kWh from '+accessoryObject.accessory.context.startTime.toISOString());
+                  }
+
+                  service.updateCharacteristic(this.customCharacteristic.characteristic.TotalPowerConsumption,
+                    accessoryObject.accessory.context.totalenergy);
+                }
+
+                if (this.config['EveLoging'] as boolean && this.update10min && this.start===false) {
+                  if (accessoryObject.accessory.context.fakeGatoService!==undefined) {
+                    accessoryObject.accessory.context.fakeGatoService.setExtraPersistedData({
+                      totalenergy:accessoryObject.accessory.context.totalenergy});
+
+                    accessoryObject.accessory.context.fakeGatoService.addEntry({
+                      time: Math.round(new Date().valueOf() / 1000),
+                      power: Math.round(power),
+                    });
+                  }
                 }
               }
             }
           }
-        }
-      });
 
-      this.update1min= false;
-      this.update10min= false;
+          this.callingService = false;
 
-    }, (this.config['UpdateTime'] as number) * 1000);
+        }).catch((error) => {
+          this.log.error('Unreachable - update', error);
+          this.callingService = false;
+          this.pauseToTime = new Date(new Date().getTime()+(1*60000));
+        });
+
+        this.update1min= false;
+        this.update10min= false;
+      }
+    }, this.config['UpdateTime'] as number * 1000);
 
   }
 
@@ -160,6 +173,8 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
 
   discoverDevices() {
     const httpRequest = new HttpRequest(this.config, this.log);
+
+    this.callingService=true;
 
     httpRequest.GetStatusListForAll().then((results)=> {
       const froniusObject = (<FroniusObject>results);
@@ -193,6 +208,12 @@ export class FroniusInverterEnergyPlatform implements DynamicPlatformPlugin {
           }
         });
       }
+
+      this.callingService=false;
+
+    }).catch((error) => {
+      this.log.error('Unreachable - start up', error);
+      this.callingService=false;
     });
   }
 
